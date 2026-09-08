@@ -272,111 +272,117 @@ export default function Home() {
               <small>Started with $100</small>
             </div>
           </div>
-          <div className={'machine ' + (last ? 'won' : '')}>
-            <div className="machine-heading">
-              <span>★</span>
-              <span>THE LUCKY ORIGINAL</span>
-              <span>★</span>
-            </div>
-            <div className="machine-sub">THREE REELS. THREE WINNING LINES.</div>
-            <div className="reel-frame">
-              <div
-                className="reels"
-                role="img"
-                aria-label={
-                  busy
-                    ? 'Three by three reels spinning'
-                    : reels
-                        .map(
-                          (row, i) =>
-                            `Row ${i + 1}: ${row.map((r) => ['cherry', 'lemon', 'bell', 'diamond', 'seven'][r]).join(', ')}${winningRows.includes(i) ? ', winning row' : ''}`,
-                        )
-                        .join('; ')
-                }
-              >
-                {reels.map((row, rowIndex) => (
-                  <div
-                    key={rowIndex}
-                    className={
-                      'reel-row ' +
-                      (winningRows.includes(rowIndex) ? 'winning-row' : '')
-                    }
-                    aria-hidden="true"
-                  >
-                    <span className="payline left">▸</span>
-                    {row.map((r, column) => (
-                      <div
-                        key={column}
-                        className={'reel ' + (busy ? 'rolling' : '')}
-                      >
-                        <span
-                          className={'symbol ' + (r === 4 ? 'seven' : '')}
-                          style={{ animationDelay: `${column * -0.08}s` }}
+          <div className="machine-assembly">
+            <div className={'machine ' + (last ? 'won' : '')}>
+              <div className="machine-heading">
+                <span>★</span>
+                <span>THE LUCKY ORIGINAL</span>
+                <span>★</span>
+              </div>
+              <div className="machine-sub">
+                THREE REELS. THREE WINNING LINES.
+              </div>
+              <div className="reel-frame">
+                <div
+                  className="reels"
+                  role="img"
+                  aria-label={
+                    busy
+                      ? 'Three by three reels spinning'
+                      : reels
+                          .map(
+                            (row, i) =>
+                              `Row ${i + 1}: ${row.map((r) => ['cherry', 'lemon', 'bell', 'diamond', 'seven'][r]).join(', ')}${winningRows.includes(i) ? ', winning row' : ''}`,
+                          )
+                          .join('; ')
+                  }
+                >
+                  {reels.map((row, rowIndex) => (
+                    <div
+                      key={rowIndex}
+                      className={
+                        'reel-row ' +
+                        (winningRows.includes(rowIndex) ? 'winning-row' : '')
+                      }
+                      aria-hidden="true"
+                    >
+                      <span className="payline left">▸</span>
+                      {row.map((r, column) => (
+                        <div
+                          key={column}
+                          className={'reel ' + (busy ? 'rolling' : '')}
                         >
-                          {symbols[r]}
-                        </span>
-                        <span className="reel-shine" />
-                      </div>
-                    ))}
-                    <span className="payline right">◂</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="result" role="status" aria-live="polite">
-              {over ? 'The bankroll is empty. What a ride.' : message}
-              {last > 0 && <strong>+{cash(last)}</strong>}
-            </div>
-            <div className="machine-controls">
-              <div className="spin-cost">
-                <span>PER SPIN</span>
-                <strong>$10</strong>
-              </div>
-              {over ? (
-                <button className="spin-button" onClick={restart}>
-                  <RotateCcw size={21} /> PLAY AGAIN <span>$100</span>
-                </button>
-              ) : (
-                <div className="lever-control">
-                  <div className="lever-instructions">
-                    <strong>{busy ? 'Good luck…' : 'Give it a pull.'}</strong>
-                    <span>
-                      {busy
-                        ? 'The reels are rolling'
-                        : 'Click or tap the lever to spin'}
-                    </span>
-                  </div>
-                  <button
-                    className={'slot-lever ' + (busy ? 'pulled' : '')}
-                    onClick={spin}
-                    disabled={busy}
-                    aria-label={
-                      busy
-                        ? 'Spinning — lever locked'
-                        : 'Pull lever to spin for $10'
-                    }
-                  >
-                    <span className="lever-assembly" aria-hidden="true">
-                      <span className="lever-plate" />
-                      <span className="lever-pivot" />
-                      <span className="lever-arm">
-                        <span className="lever-knob" />
-                      </span>
-                    </span>
-                  </button>
+                          <span
+                            className={'symbol ' + (r === 4 ? 'seven' : '')}
+                            style={{ animationDelay: `${column * -0.08}s` }}
+                          >
+                            {symbols[r]}
+                          </span>
+                          <span className="reel-shine" />
+                        </div>
+                      ))}
+                      <span className="payline right">◂</span>
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
+              <div className="result" role="status" aria-live="polite">
+                {over ? 'The bankroll is empty. What a ride.' : message}
+                {last > 0 && <strong>+{cash(last)}</strong>}
+              </div>
+              <div className="machine-controls">
+                <div className="spin-cost">
+                  <span>PER SPIN</span>
+                  <strong>$10</strong>
+                </div>
+                {over ? (
+                  <button className="spin-button" onClick={restart}>
+                    <RotateCcw size={21} /> PLAY AGAIN <span>$100</span>
+                  </button>
+                ) : (
+                  <div className="lever-control">
+                    <div className="lever-instructions">
+                      <strong>{busy ? 'Good luck…' : 'Give it a pull.'}</strong>
+                      <span>
+                        {busy
+                          ? 'The reels are rolling'
+                          : 'Click or tap the lever to spin'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="machine-footer">
+                {over ? (
+                  'New run. Fresh upgrades. Another chance.'
+                ) : (
+                  <>
+                    PRESS <kbd>SPACE</kbd> TO SPIN <span>•</span> TRUST THE
+                    PROCESS
+                  </>
+                )}
+              </div>
             </div>
-            <div className="machine-footer">
-              {over ? (
-                'New run. Fresh upgrades. Another chance.'
-              ) : (
-                <>
-                  PRESS <kbd>SPACE</kbd> TO SPIN <span>•</span> TRUST THE
-                  PROCESS
-                </>
-              )}
-            </div>
+            <button
+              className={'slot-lever ' + (busy ? 'pulled' : '')}
+              onClick={spin}
+              disabled={busy || over}
+              aria-label={
+                over
+                  ? 'Game over — start a new run to use the lever'
+                  : busy
+                    ? 'Spinning — lever locked'
+                    : 'Pull lever to spin for $10'
+              }
+            >
+              <span className="lever-assembly" aria-hidden="true">
+                <span className="lever-plate" />
+                <span className="lever-pivot" />
+                <span className="lever-arm">
+                  <span className="lever-knob" />
+                </span>
+              </span>
+            </button>
           </div>
           <div className="stats">
             <div>

@@ -1054,3 +1054,80 @@ footer {
     gap: 4px;
   }
 }
+
+/* Reserve space for the side-mounted lever, including on narrow screens. */
+.machine-assembly {
+  position: relative;
+  padding-right: 82px;
+}
+.machine-assembly > .slot-lever {
+  position: absolute;
+  right: 0;
+  top: 43%;
+  transform: translateY(-50%);
+  width: 82px;
+}
+.machine-assembly > .slot-lever::before {
+  content: '';
+  position: absolute;
+  width: 28px;
+  height: 22px;
+  left: -10px;
+  bottom: 27px;
+  background: linear-gradient(#66724e, #252e20 70%, #151c12);
+  border: 1px solid #66724e;
+  border-radius: 4px;
+}
+.machine-assembly .lever-assembly {
+  width: 94px;
+  left: 50%;
+  margin-left: -47px;
+  transform: scale(0.88);
+}
+.machine-assembly .machine-heading {
+  gap: 8px;
+  text-align: center;
+  font-size: clamp(14px, 1.5vw, 20px);
+  letter-spacing: 2px;
+}
+.machine-assembly .result {
+  min-height: 61px;
+  height: auto;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  text-align: center;
+}
+.machine-assembly .machine-controls {
+  flex-wrap: wrap;
+}
+.machine-assembly .machine-footer {
+  line-height: 1.8;
+}
+.machine-assembly .reel-row .symbol {
+  font-size: clamp(32px, 4.5vw, 58px);
+}
+.machine-assembly .reel-row .symbol.seven {
+  font-size: clamp(44px, 5.5vw, 72px);
+}
+@media (max-width: 950px) {
+  .machine-assembly {
+    padding-right: 64px;
+  }
+  .machine-assembly > .slot-lever {
+    width: 64px;
+  }
+  .machine-assembly .lever-assembly {
+    transform: scale(0.72);
+  }
+  .machine-assembly .machine {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .machine-assembly .machine-heading {
+    letter-spacing: 1px;
+  }
+  .machine-assembly .machine-heading > span:first-child,
+  .machine-assembly .machine-heading > span:last-child {
+    font-size: 12px;
+  }
+}
