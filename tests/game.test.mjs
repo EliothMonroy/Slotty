@@ -149,7 +149,7 @@ test('devil pairs and diagonal devils do not trigger penalty or pay', () => {
   assert.equal(mixed.payout, 20);
 });
 
-test('devil penalties round to whole dollars and partial final spins never go negative', () => {
+test('devil penalties round to whole dollars and spins below the minimum are rejected', () => {
   const devil = evaluateGrid(
     [
       [5, 5, 5],
@@ -165,8 +165,8 @@ test('devil penalties round to whole dollars and partial final spins never go ne
     balance: 17,
   });
   assert.equal(settleSpin(11, devil).balance, 0);
-  assert.equal(settleSpin(7, devil).balance, 0);
-  assert.equal(settleSpin(0, devil).balance, 0);
+  assert.throws(() => settleSpin(7, devil), /Not enough money/);
+  assert.throws(() => settleSpin(0, devil), /Not enough money/);
   const win = evaluateGrid(
     [
       [0, 0, 0],
@@ -175,8 +175,8 @@ test('devil penalties round to whole dollars and partial final spins never go ne
     ],
     1,
   );
-  assert.deepEqual(settleSpin(7, win), {
-    cost: 7,
+  assert.deepEqual(settleSpin(10, win), {
+    cost: 10,
     loss: 0,
     payout: 40,
     balance: 40,
@@ -192,7 +192,7 @@ test('all integer bankrolls keep integer balances through devil penalties', () =
     ],
     1,
   );
-  for (let bankroll = 0; bankroll <= 1000; bankroll++) {
+  for (let bankroll = 10; bankroll <= 1000; bankroll++) {
     const result = settleSpin(bankroll, devil);
     assert.equal(result.loss, Math.round(Math.max(0, bankroll - 10) / 2));
     assert(Number.isInteger(result.balance));
@@ -215,7 +215,7 @@ test('nine devils always cancel payouts and exhaust the entire bankroll', () => 
   assert.equal(outcome.win, false);
   assert.equal(outcome.payout, 0);
   assert.deepEqual(outcome.winningRows, []);
-  for (const bankroll of [0, 1, 7, 10, 11, 45, 100, 100000]) {
+  for (const bankroll of [10, 11, 45, 100, 100000]) {
     const result = settleSpin(bankroll, outcome);
     assert.equal(result.balance, 0);
     assert.equal(result.loss, Math.max(0, bankroll - 10));
@@ -263,4 +263,80 @@ test('protected spin odds agree with the displayed net win chance', () => {
     assert(Math.abs(wins / spins - 0.8 * (1 - risk) ** 3) < 0.015);
     assert(Math.abs(devils / (spins * 3) - risk) < 0.002);
   }
+});
+
+test('every allowed stake charges once and scales upgraded row payouts proportionally', () => {
+  const outcome = evaluateGrid(
+    [
+      [3, 3, 3],
+      [0, 0, 0],
+      [1, 2, 3],
+    ],
+    3.5,
+  );
+  for (let stake = 10; stake <= 100; stake += 10) {
+    const settled = settleSpin(1000, outcome, stake);
+    assert.equal(settled.cost, stake);
+    assert.equal(settled.payout, (outcome.payout * stake) / 10);
+    assert.equal(settled.balance, 1000 - stake + settled.payout);
+    assert.equal(settled.loss, 0);
+  }
+});
+
+test('stake limits, step size, and insufficient funds are enforced', () => {
+  const outcome = evaluateGrid(
+    [
+      [0, 1, 2],
+      [1, 2, 3],
+      [2, 3, 4],
+    ],
+    1,
+  );
+  for (const stake of [-10, 0, 5, 15, 99, 110, 10.5, NaN, Infinity]) {
+    assert.throws(() => settleSpin(1000, outcome, stake), /Spin cost/);
+  }
+  assert.throws(() => settleSpin(99, outcome, 100), /Not enough money/);
+  assert.throws(() => settleSpin(9, outcome, 10), /Not enough money/);
+  assert.equal(settleSpin(100, outcome, 100).balance, 0);
+  assert.equal(settleSpin(99, outcome, 90).balance, 9);
+});
+
+test('devil penalties use the balance after the selected stake and never scale as winnings', () => {
+  const half = evaluateGrid(
+    [
+      [5, 5, 5],
+      [4, 4, 4],
+      [3, 3, 3],
+    ],
+    3.5,
+  );
+  assert.deepEqual(settleSpin(251, half, 100), {
+    cost: 100,
+    loss: 76,
+    payout: 0,
+    balance: 75,
+  });
+  const fatal = evaluateGrid(
+    [
+      [5, 5, 5],
+      [5, 5, 5],
+      [5, 5, 5],
+    ],
+    3.5,
+  );
+  assert.deepEqual(settleSpin(251, fatal, 100), {
+    cost: 100,
+    loss: 151,
+    payout: 0,
+    balance: 0,
+  });
+  const win = evaluateGrid(
+    [
+      [0, 0, 0],
+      [0, 1, 2],
+      [1, 2, 3],
+    ],
+    1,
+  );
+  assert.equal(settleSpin(100, win, 100).balance, 400);
 });

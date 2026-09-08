@@ -1247,3 +1247,34 @@ footer {
   display: block;
   color: var(--muted);
 }
+
+.spin-cost label {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 1px;
+  margin-bottom: 7px;
+}
+.spin-cost select {
+  font: inherit;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--lime);
+  background: #151e13;
+  border: 1px solid #687a46;
+  border-radius: 8px;
+  padding: 8px 24px 8px 10px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.spin-cost select:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 3px;
+}
+.spin-cost select:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.slot-lever:disabled:not(.pulled) .lever-knob {
+  filter: saturate(0.35);
+}

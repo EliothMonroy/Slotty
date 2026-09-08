@@ -58,6 +58,7 @@ const upgrades = [
 ];
 export default function Home() {
   const [s, setS] = useState(fresh);
+  const [spinCost, setSpinCost] = useState(10);
   const [reels, setReels] = useState([
     [0, 3, 4],
     [2, 1, 0],
@@ -84,9 +85,9 @@ export default function Home() {
   const chance = 40 + s.levels[0] * 5;
   const devilChance = devilRowChance(s.levels[3] ?? 0);
   const netChance = chance * (1 - devilChance) ** 3;
-  const spinCost = Math.min(10, s.money);
   const multiplier = 1 + s.levels[1] * 0.5;
-  const over = s.money === 0 && !busy;
+  const over = s.money < 10 && !busy;
+  const canSpin = !busy && s.money >= spinCost;
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current);
@@ -114,7 +115,7 @@ export default function Home() {
     } catch {}
   }
   function spin() {
-    if (lock.current || s.money === 0) return;
+    if (lock.current || s.money < spinCost) return;
     lock.current = true;
     setBusy(true);
     setLast(0);
@@ -135,7 +136,11 @@ export default function Home() {
       devilRows: devils,
       fatal,
     } = outcome;
-    const { payout, loss, balance, cost } = settleSpin(s.money, outcome);
+    const { payout, loss, balance, cost } = settleSpin(
+      s.money,
+      outcome,
+      spinCost,
+    );
     setS((v) => ({ ...v, money: v.money - cost }));
     timer.current = setTimeout(() => {
       setReels(result);
@@ -184,6 +189,7 @@ export default function Home() {
   function restart() {
     if (lock.current) return;
     setS(fresh());
+    setSpinCost(10);
     setReels([
       [0, 3, 4],
       [2, 1, 0],
@@ -210,8 +216,8 @@ export default function Home() {
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
   });
-  const api = useRef({ spin, s, busy });
-  api.current = { spin, s, busy };
+  const api = useRef({ spin, s, busy, spinCost });
+  api.current = { spin, s, busy, spinCost };
   useEffect(() => {
     const context = (
       document as Document & {
@@ -241,12 +247,16 @@ export default function Home() {
         additionalProperties: false,
       },
       annotations: { readOnlyHint: true },
-      execute: () => ({ ...api.current.s, busy: api.current.busy }),
+      execute: () => ({
+        ...api.current.s,
+        busy: api.current.busy,
+        spinCost: api.current.spinCost,
+      }),
     });
     register({
       name: 'spin_slotty',
       description:
-        'Spend up to $10 of virtual money on one spin and return the resolved bankroll and statistics.',
+        'Spend the currently selected $10–$100 stake of virtual money on one spin and return the resolved bankroll and statistics.',
       inputSchema: {
         type: 'object',
         properties: {},
@@ -256,11 +266,15 @@ export default function Home() {
       execute: async (input: unknown) => {
         if (!input || typeof input !== 'object' || Object.keys(input).length)
           throw new Error('Expected an empty object');
-        if (lock.current || api.current.s.money <= 0)
+        if (lock.current || api.current.s.money < api.current.spinCost)
           throw new Error('Cannot spin now');
         api.current.spin();
         await new Promise((resolve) => setTimeout(resolve, 1150));
-        return { ...api.current.s, busy: api.current.busy };
+        return {
+          ...api.current.s,
+          busy: api.current.busy,
+          spinCost: api.current.spinCost,
+        };
       },
     });
     return () => controller.abort();
@@ -383,8 +397,8 @@ export default function Home() {
                   ? devilRows.length === 3
                     ? 'Nine devils. Entire bankroll lost. Game over.'
                     : devilRows.length
-                      ? 'Three devils. Bankroll empty. Game over.'
-                      : 'The bankroll is empty. What a ride.'
+                      ? 'Devils left you below the $10 minimum. Game over.'
+                      : 'Below the $10 minimum. Game over.'
                   : message}
                 {last > 0 && <strong>+{cash(last)}</strong>}
                 {last < 0 && (
@@ -393,8 +407,24 @@ export default function Home() {
               </div>
               <div className="machine-controls">
                 <div className="spin-cost">
-                  <span>PER SPIN</span>
-                  <strong>{cash(over ? 10 : spinCost)}</strong>
+                  <label htmlFor="spin-stake">PER SPIN</label>
+                  <select
+                    id="spin-stake"
+                    value={spinCost}
+                    disabled={busy || over}
+                    onChange={(event) => {
+                      if (!lock.current)
+                        setSpinCost(Number(event.target.value));
+                    }}
+                  >
+                    {Array.from({ length: 10 }, (_, i) => (i + 1) * 10).map(
+                      (stake) => (
+                        <option key={stake} value={stake}>
+                          {cash(stake)}
+                        </option>
+                      ),
+                    )}
+                  </select>
                 </div>
                 {over ? (
                   <button className="spin-button" onClick={restart}>
@@ -403,11 +433,19 @@ export default function Home() {
                 ) : (
                   <div className="lever-control">
                     <div className="lever-instructions">
-                      <strong>{busy ? 'Good luck…' : 'Give it a pull.'}</strong>
+                      <strong>
+                        {busy
+                          ? 'Good luck…'
+                          : !canSpin
+                            ? 'Lower your stake.'
+                            : 'Give it a pull.'}
+                      </strong>
                       <span>
                         {busy
                           ? 'The reels are rolling'
-                          : 'Click or tap the lever to spin'}
+                          : !canSpin
+                            ? `You have ${cash(s.money)}. Choose an affordable spin.`
+                            : 'Click or tap the lever to spin'}
                       </span>
                     </div>
                   </div>
@@ -427,13 +465,15 @@ export default function Home() {
             <button
               className={'slot-lever ' + (busy ? 'pulled' : '')}
               onClick={spin}
-              disabled={busy || over}
+              disabled={!canSpin}
               aria-label={
                 over
                   ? 'Game over — start a new run to use the lever'
                   : busy
                     ? 'Spinning — lever locked'
-                    : `Pull lever to spin for ${cash(spinCost)}`
+                    : !canSpin
+                      ? 'Lower your stake to spin'
+                      : `Pull lever to spin for ${cash(spinCost)}`
               }
             >
               <span className="lever-assembly" aria-hidden="true">
@@ -569,7 +609,8 @@ export default function Home() {
           </div>
           <p className="payout-rules">
             Each horizontal row pays separately. Row payouts add up; columns and
-            diagonals do not pay.
+            diagonals do not pay. Payouts below reflect your {cash(spinCost)}{' '}
+            stake and upgrades. Higher stakes scale payouts, not odds.
           </p>
           <p className="devil-rule">
             😈 😈 😈 <strong>Lose 50%</strong> of your bankroll after the spin
@@ -580,8 +621,8 @@ export default function Home() {
             </strong>{' '}
             Devil pairs do not pay. Each row currently has a{' '}
             {(devilChance * 100).toFixed(3)}% devil-triple chance; Devil ward
-            reduces these odds. The win meter includes this risk. Below $10,
-            your final spin uses the remaining balance.
+            reduces these odds. The win meter includes this risk. Below $10, the
+            run ends because you cannot cover the minimum spin.
           </p>
           <div className="payout-list">
             <div>
@@ -589,7 +630,7 @@ export default function Home() {
                 AA<span>?</span>
               </span>
               <small>Normal pair</small>
-              <strong>{cash(20 * multiplier)}</strong>
+              <strong>{cash(20 * multiplier * (spinCost / 10))}</strong>
             </div>
             {symbols.slice(0, 5).map((x, i) => (
               <div key={i}>
@@ -601,7 +642,11 @@ export default function Home() {
                   {['cherry', 'lemon', 'bell', 'diamond', 'seven', 'devil'][i]}
                 </small>
                 <strong>
-                  {cash(Math.round((prizes[i] * multiplier) / 10) * 10)}
+                  {cash(
+                    Math.round((prizes[i] * multiplier) / 10) *
+                      10 *
+                      (spinCost / 10),
+                  )}
                 </strong>
               </div>
             ))}

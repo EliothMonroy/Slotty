@@ -79,15 +79,19 @@ export function evaluateGrid(reels: number[][], multiplier: number) {
 export function settleSpin(
   bankroll: number,
   outcome: ReturnType<typeof evaluateGrid>,
+  stake = 10,
 ) {
-  const cost = Math.min(10, bankroll);
+  if (!Number.isInteger(stake) || stake < 10 || stake > 100 || stake % 10 !== 0)
+    throw new Error('Spin cost must be $10–$100 in steps of $10');
+  if (bankroll < stake) throw new Error('Not enough money for this spin');
+  const cost = stake;
   const remaining = bankroll - cost;
   const loss = outcome.fatal
     ? remaining
     : outcome.devilRows.length
       ? Math.round(remaining / 2)
       : 0;
-  const payout = outcome.devilRows.length ? 0 : outcome.payout;
+  const payout = outcome.devilRows.length ? 0 : outcome.payout * (stake / 10);
   return {
     cost,
     loss,

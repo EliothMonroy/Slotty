@@ -1,6 +1,6 @@
 # Slotty
 
-A browser slot game with virtual money. Start at $100; each spin costs $10 (or your remaining bankroll if less). The machine has a 3×3 grid. Each horizontal row pays separately for matching pairs or triples; row payouts are added together. Columns and diagonals do not pay. Click or tap the lever (or press Space) to spin. The lever locks while the reels are rolling. At $0, the run ends and Play again resets the bankroll and upgrades.
+A browser slot game with virtual money. Start at $100; choose a spin cost from $10 to $100 in $10 steps. Normal payouts scale by the selected cost divided by $10; symbol odds do not change. You must afford the full selected cost, and a balance below $10 ends the run. The machine has a 3×3 grid. Each horizontal row pays separately for matching pairs or triples; row payouts are added together. Columns and diagonals do not pay. Click or tap the lever (or press Space) to spin. The lever locks while the reels are rolling. Below $10, the run ends and Play again resets the bankroll and upgrades.
 
 - Lucky charm adds 5 percentage points to the starting 40% win chance per level (80% maximum).
 - The win-chance meter measures at least one winning row per spin. Each independent row uses `1 - (1 - matchChance)^(1/3)` ordinary match odds; net win chance is `matchChance * (1 - devilRowChance)^3` after devil overrides.
