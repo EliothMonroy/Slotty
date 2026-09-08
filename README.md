@@ -7,7 +7,7 @@ A browser slot game with virtual money. Start at $100; each spin costs $10 (or y
 - Heavy pockets adds 0.5 to the payout multiplier per level (3.5× maximum).
 - Diamond touch converts 8% more winning rows per level into triple diamonds (40% maximum).
 - Upgrade prices double each level. Purchases reserve $10 for another spin.
-- Normal payouts round to the nearest $10. A horizontal triple of devils cancels every payout and deducts 50% of the bankroll remaining after the spin cost, rounded to the nearest cent. Multiple devil rows trigger only one penalty. Devil pairs do not pay.
+- Normal payouts round to the nearest $10. A horizontal triple of devils cancels every payout and deducts 50% of the bankroll remaining after the spin cost, rounded to the nearest whole dollar (.5 rounds up). Multiple devil rows trigger only one penalty. Devil pairs do not pay.
 - Devil triples have an independent 2% chance per row, unaffected by upgrades. The displayed win chance includes the chance of a devil override.
 - Runs are held in memory; refreshing starts over. No real money, accounts, or payments.
 

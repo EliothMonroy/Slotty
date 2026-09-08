@@ -148,7 +148,7 @@ test('devil pairs and diagonal devils do not trigger penalty or pay', () => {
   assert.equal(mixed.payout, 20);
 });
 
-test('fractional balances, final partial spins, and zero bankroll settle without negatives', () => {
+test('devil penalties round to whole dollars and partial final spins never go negative', () => {
   const devil = evaluateGrid(
     [
       [5, 5, 5],
@@ -159,12 +159,12 @@ test('fractional balances, final partial spins, and zero bankroll settle without
   );
   assert.deepEqual(settleSpin(45, devil), {
     cost: 10,
-    loss: 17.5,
+    loss: 18,
     payout: 0,
-    balance: 17.5,
+    balance: 17,
   });
-  assert.equal(settleSpin(10.01, devil).balance, 0);
-  assert.equal(settleSpin(7.5, devil).balance, 0);
+  assert.equal(settleSpin(11, devil).balance, 0);
+  assert.equal(settleSpin(7, devil).balance, 0);
   assert.equal(settleSpin(0, devil).balance, 0);
   const win = evaluateGrid(
     [
@@ -174,10 +174,29 @@ test('fractional balances, final partial spins, and zero bankroll settle without
     ],
     1,
   );
-  assert.deepEqual(settleSpin(7.5, win), {
-    cost: 7.5,
+  assert.deepEqual(settleSpin(7, win), {
+    cost: 7,
     loss: 0,
     payout: 40,
     balance: 40,
   });
+});
+
+test('all integer bankrolls keep integer balances through devil penalties', () => {
+  const devil = evaluateGrid(
+    [
+      [5, 5, 5],
+      [0, 0, 0],
+      [4, 4, 4],
+    ],
+    1,
+  );
+  for (let bankroll = 0; bankroll <= 1000; bankroll++) {
+    const result = settleSpin(bankroll, devil);
+    assert.equal(result.loss, Math.round(Math.max(0, bankroll - 10) / 2));
+    assert(Number.isInteger(result.balance));
+    assert(result.balance >= 0);
+    assert.equal(result.balance + result.loss + result.cost, bankroll);
+    assert.equal(result.payout, 0);
+  }
 });

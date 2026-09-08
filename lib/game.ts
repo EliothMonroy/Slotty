@@ -68,16 +68,14 @@ export function settleSpin(
   outcome: ReturnType<typeof evaluateGrid>,
 ) {
   const cost = Math.min(10, bankroll);
-  const remainingCents = Math.round((bankroll - cost) * 100);
-  const lossCents = outcome.devilRows.length
-    ? Math.round(remainingCents / 2)
-    : 0;
+  const remaining = bankroll - cost;
+  const loss = outcome.devilRows.length ? Math.round(remaining / 2) : 0;
   const payout = outcome.devilRows.length ? 0 : outcome.payout;
   return {
     cost,
-    loss: lossCents / 100,
+    loss,
     payout,
-    balance: (remainingCents - lossCents + payout * 100) / 100,
+    balance: remaining - loss + payout,
   };
 }
 

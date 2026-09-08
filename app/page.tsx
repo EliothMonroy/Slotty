@@ -14,8 +14,8 @@ import { roll, prizes, settleSpin, DEVIL_ROW_CHANCE } from '../lib/game';
 const cash = (n: number) =>
   '$' +
   n.toLocaleString('en-US', {
-    minimumFractionDigits: Number.isInteger(n) ? 0 : 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   });
 const fresh = () => ({
   money: 100,
@@ -113,7 +113,7 @@ export default function Home() {
       devilRows: devils,
     } = outcome;
     const { payout, loss, balance, cost } = settleSpin(s.money, outcome);
-    setS((v) => ({ ...v, money: Math.round((v.money - cost) * 100) / 100 }));
+    setS((v) => ({ ...v, money: v.money - cost }));
     timer.current = setTimeout(() => {
       setReels(result);
       setWinningRows(matches);
@@ -151,7 +151,7 @@ export default function Home() {
     if (lock.current || s.levels[i] >= u.max || s.money - cost < 10) return;
     setS((v) => ({
       ...v,
-      money: Math.round((v.money - cost) * 100) / 100,
+      money: v.money - cost,
       levels: v.levels.map((l, j) => (j === i ? l + 1 : l)),
     }));
     setMessage(u.name + ' upgraded. Make your own luck.');
@@ -278,10 +278,7 @@ export default function Home() {
           <div className="bankroll">
             <div>
               <span className="eyebrow">YOUR BANKROLL</span>
-              <div className="balance">
-                {cash(s.money)}
-                {Number.isInteger(s.money) && <span>.00</span>}
-              </div>
+              <div className="balance">{cash(s.money)}</div>
             </div>
             <div className="bankroll-side">
               <span className="status-dot" />{' '}
@@ -535,10 +532,11 @@ export default function Home() {
           </p>
           <p className="devil-rule">
             😈 😈 😈 <strong>Lose 50%</strong> of your bankroll after the spin
-            cost (rounded to cents). All payouts are canceled, even on other
-            rows. One penalty per spin. Devil pairs do not pay. Each row has a
-            2% devil-triple chance; the win meter includes this risk. Below $10,
-            your final spin uses the remaining balance.
+            cost (rounded to the nearest dollar; .5 rounds up). All payouts are
+            canceled, even on other rows. One penalty per spin. Devil pairs do
+            not pay. Each row has a 2% devil-triple chance; the win meter
+            includes this risk. Below $10, your final spin uses the remaining
+            balance.
           </p>
           <div className="payout-list">
             <div>
