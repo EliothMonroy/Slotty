@@ -1,5 +1,5 @@
 export const prizes = [40, 50, 80, 150, 250];
-export function roll(
+function rollRow(
   chance: number,
   multiplier: number,
   diamondLevel: number,
@@ -31,4 +31,23 @@ export function roll(
     reels = [first, second, remaining[Math.floor(random() * 3)]];
   }
   return { win, reels, payout };
+}
+
+// Independent row odds preserve the displayed chance of at least one win per spin.
+export function roll(
+  chance: number,
+  multiplier: number,
+  diamondLevel: number,
+  random = Math.random,
+) {
+  const rowChance = (1 - Math.cbrt(1 - chance / 100)) * 100;
+  const rows = Array.from({ length: 3 }, () =>
+    rollRow(rowChance, multiplier, diamondLevel, random),
+  );
+  return {
+    win: rows.some((row) => row.win),
+    reels: rows.map((row) => row.reels),
+    payout: rows.reduce((sum, row) => sum + row.payout, 0),
+    winningRows: rows.flatMap((row, i) => (row.win ? [i] : [])),
+  };
 }

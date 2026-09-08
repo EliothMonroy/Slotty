@@ -206,7 +206,7 @@ h1 em {
   box-shadow: 0 0 0 5px #131a14;
 }
 .reels {
-  display: flex;
+  display: grid;
   gap: 8px;
 }
 .reel {
@@ -857,5 +857,68 @@ footer {
   }
   .payout-list small {
     font-size: 11px;
+  }
+}
+
+.reel-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.reel-row .reel {
+  height: clamp(76px, 8vw, 98px);
+}
+.reel-row .symbol {
+  font-size: clamp(40px, 5vw, 58px);
+}
+.reel-row .symbol.seven {
+  font-size: clamp(52px, 6vw, 72px);
+}
+.reel-row .payline {
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.35;
+  font-size: 24px;
+}
+.reel-row .payline.left {
+  left: -24px;
+}
+.reel-row .payline.right {
+  right: -24px;
+}
+.winning-row .payline {
+  opacity: 1;
+}
+.winning-row .reel {
+  outline: 3px solid var(--lime);
+  outline-offset: -3px;
+}
+.payout-rules {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 12px 0 0;
+}
+.history > div {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding: 6px 0;
+}
+.history-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px 5px;
+  line-height: 1.15;
+}
+@media (max-width: 700px) {
+  .reel-row .reel {
+    height: 82px;
+  }
+  .reel-row .symbol {
+    font-size: 48px;
+  }
+  .reel-row .symbol.seven {
+    font-size: 62px;
   }
 }

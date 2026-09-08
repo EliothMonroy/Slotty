@@ -25,7 +25,7 @@ const upgrades = [
   {
     name: 'Lucky charm',
     icon: Clover,
-    desc: 'More chances to land a winning spin.',
+    desc: 'More chances to win on at least one row.',
     base: 40,
     max: 8,
   },
@@ -39,21 +39,26 @@ const upgrades = [
   {
     name: 'Diamond touch',
     icon: Sparkles,
-    desc: 'Turn more wins into triple diamonds.',
+    desc: 'Turn more winning rows into triple diamonds.',
     base: 100,
     max: 5,
   },
 ];
 export default function Home() {
   const [s, setS] = useState(fresh);
-  const [reels, setReels] = useState([0, 3, 4]);
+  const [reels, setReels] = useState([
+    [0, 3, 4],
+    [2, 1, 0],
+    [4, 2, 3],
+  ]);
+  const [winningRows, setWinningRows] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('A little luck goes a long way.');
   const [last, setLast] = useState(0);
   const [sound, setSound] = useState(false);
   const lock = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [history, setHistory] = useState<{ r: number[]; p: number }[]>([]);
+  const [history, setHistory] = useState<{ r: number[][]; p: number }[]>([]);
   const chance = 40 + s.levels[0] * 5;
   const multiplier = 1 + s.levels[1] * 0.5;
   const over = s.money === 0 && !busy;
@@ -88,15 +93,18 @@ export default function Home() {
     lock.current = true;
     setBusy(true);
     setLast(0);
+    setWinningRows([]);
     setMessage('Let the good times roll…');
     setS((v) => ({ ...v, money: v.money - 10 }));
     const {
       win,
       reels: result,
+      winningRows: matches,
       payout,
     } = roll(chance, multiplier, s.levels[2]);
     timer.current = setTimeout(() => {
       setReels(result);
+      setWinningRows(matches);
       setLast(payout);
       setS((v) => ({
         ...v,
@@ -109,9 +117,7 @@ export default function Home() {
       setHistory((h) => [{ r: result, p: payout }, ...h].slice(0, 5));
       setMessage(
         win
-          ? new Set(result).size === 1
-            ? 'Triple match. Beautiful.'
-            : 'A match made in money.'
+          ? `${matches.length} winning ${matches.length === 1 ? 'row' : 'rows'}. Beautiful.`
           : 'No match. The next spin is yours.',
       );
       setBusy(false);
@@ -133,9 +139,15 @@ export default function Home() {
   function restart() {
     if (lock.current) return;
     setS(fresh());
-    setReels([0, 3, 4]);
+    setReels([
+      [0, 3, 4],
+      [2, 1, 0],
+      [4, 2, 3],
+    ]);
+    setWinningRows([]);
     setHistory([]);
     setLast(0);
+    setWinningRows([]);
     setMessage('A fresh start. A hundred possibilities.');
   }
   useEffect(() => {
@@ -267,37 +279,50 @@ export default function Home() {
               <span>THE LUCKY ORIGINAL</span>
               <span>★</span>
             </div>
-            <div className="machine-sub">
-              THREE REELS. ENDLESS POSSIBILITIES.
-            </div>
+            <div className="machine-sub">THREE REELS. THREE WINNING LINES.</div>
             <div className="reel-frame">
-              <div className="payline left">▸</div>
               <div
                 className="reels"
+                role="img"
                 aria-label={
                   busy
-                    ? 'Reels spinning'
+                    ? 'Three by three reels spinning'
                     : reels
                         .map(
-                          (i) =>
-                            ['cherry', 'lemon', 'bell', 'diamond', 'seven'][i],
+                          (row, i) =>
+                            `Row ${i + 1}: ${row.map((r) => ['cherry', 'lemon', 'bell', 'diamond', 'seven'][r]).join(', ')}${winningRows.includes(i) ? ', winning row' : ''}`,
                         )
-                        .join(', ')
+                        .join('; ')
                 }
               >
-                {reels.map((r, i) => (
-                  <div key={i} className={'reel ' + (busy ? 'rolling' : '')}>
-                    <span
-                      className={'symbol ' + (r === 4 ? 'seven' : '')}
-                      style={{ animationDelay: `${i * -0.08}s` }}
-                    >
-                      {symbols[r]}
-                    </span>
-                    <span className="reel-shine" />
+                {reels.map((row, rowIndex) => (
+                  <div
+                    key={rowIndex}
+                    className={
+                      'reel-row ' +
+                      (winningRows.includes(rowIndex) ? 'winning-row' : '')
+                    }
+                    aria-hidden="true"
+                  >
+                    <span className="payline left">▸</span>
+                    {row.map((r, column) => (
+                      <div
+                        key={column}
+                        className={'reel ' + (busy ? 'rolling' : '')}
+                      >
+                        <span
+                          className={'symbol ' + (r === 4 ? 'seven' : '')}
+                          style={{ animationDelay: `${column * -0.08}s` }}
+                        >
+                          {symbols[r]}
+                        </span>
+                        <span className="reel-shine" />
+                      </div>
+                    ))}
+                    <span className="payline right">◂</span>
                   </div>
                 ))}
               </div>
-              <div className="payline right">◂</div>
             </div>
             <div className="result" role="status" aria-live="polite">
               {over ? 'The bankroll is empty. What a ride.' : message}
@@ -437,6 +462,10 @@ export default function Home() {
           <div className="section-label">
             KNOW YOUR MATCHES <span>{multiplier.toFixed(1)}× PAYOUT</span>
           </div>
+          <p className="payout-rules">
+            Each horizontal row pays separately. Row payouts add up; columns and
+            diagonals do not pay.
+          </p>
           <div className="payout-list">
             <div>
               <span className="pair">
@@ -468,7 +497,21 @@ export default function Home() {
             <div className="history">
               {history.map((h, i) => (
                 <div key={i}>
-                  <span>{h.r.map((r) => symbols[r]).join(' ')}</span>
+                  <span
+                    className="history-grid"
+                    aria-label={h.r
+                      .map(
+                        (row, n) =>
+                          `Row ${n + 1}: ${row.map((r) => ['cherry', 'lemon', 'bell', 'diamond', 'seven'][r]).join(', ')}`,
+                      )
+                      .join('; ')}
+                  >
+                    {h.r.flat().map((r, cell) => (
+                      <span key={cell} aria-hidden="true">
+                        {symbols[r]}
+                      </span>
+                    ))}
+                  </span>
                   <strong className={h.p ? 'positive' : ''}>
                     {h.p ? '+' + cash(h.p) : '−$10'}
                   </strong>
