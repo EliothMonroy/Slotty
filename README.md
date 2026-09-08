@@ -16,3 +16,15 @@ Use Node 22.13+ and npm. Run `npm ci`, then `npm run dev`. `npm run build` build
 ## Verification
 
 Production build and TypeScript checks passed. 90,000 generated outcomes were checked for valid symbols, matching outcomes, payout consistency, and multiples of $10. The preview route returned HTTP 200. Browser interaction and visual QA were not run. Optional WebMCP tools are feature-detected; no supported WebMCP validation context was available.
+
+## Standalone HTML
+
+Open `index.html` directly in a browser to play without installing dependencies. It includes the game, React runtime, icons, and styles. Regenerate after changes with `node scripts/export-html.mjs`.
+
+## Hosting status
+
+Private publishing was attempted twice and failed in the hosting service with HTTP 409 Conflict during sign-in callback registration. The local game and standalone HTML remain usable.
+
+- Site: `appgprj_6aa05845c35881919d6c6886b9266d51`
+- Saved version: `appgprj_6aa05845c35881919d6c6886b9266d51~appgver_13572beca94c81918232295cde3379c4`
+- Last failed deployment: `appgdep_6aa059d236588191b914b5eca648c70d`
