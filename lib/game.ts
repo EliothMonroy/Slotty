@@ -17,23 +17,71 @@ function rollRow(
     } else
       reels = triple
         ? [symbol, symbol, symbol]
-        : [symbol, symbol, (symbol + 1 + Math.floor(random() * 4)) % 5];
+        : [symbol, symbol, (symbol + 1 + Math.floor(random() * 5)) % 6];
     payout =
       Math.round(
         ((new Set(reels).size === 1 ? prizes[symbol] : 20) * multiplier) / 10,
       ) * 10;
   } else {
-    const first = Math.floor(random() * 5);
-    const second = (first + 1 + Math.floor(random() * 4)) % 5;
-    const remaining = [0, 1, 2, 3, 4].filter(
+    const first = Math.floor(random() * 6);
+    const second = (first + 1 + Math.floor(random() * 5)) % 6;
+    const remaining = [0, 1, 2, 3, 4, 5].filter(
       (x) => x !== first && x !== second,
     );
-    reels = [first, second, remaining[Math.floor(random() * 3)]];
+    reels = [first, second, remaining[Math.floor(random() * remaining.length)]];
   }
   return { win, reels, payout };
 }
 
-// Independent row odds preserve the displayed chance of at least one win per spin.
+export const DEVIL = 5;
+export const DEVIL_ROW_CHANCE = 0.02;
+
+export function evaluateGrid(reels: number[][], multiplier: number) {
+  const devilRows = reels.flatMap((row, i) =>
+    row.every((symbol) => symbol === DEVIL) ? [i] : [],
+  );
+  if (devilRows.length)
+    return { win: false, reels, payout: 0, winningRows: [], devilRows };
+  const payouts = reels.map((row) => {
+    const counts = new Map<number, number>();
+    for (const symbol of row) counts.set(symbol, (counts.get(symbol) ?? 0) + 1);
+    for (const [symbol, count] of counts) {
+      if (symbol !== DEVIL && count >= 2)
+        return (
+          Math.round(((count === 3 ? prizes[symbol] : 20) * multiplier) / 10) *
+          10
+        );
+    }
+    return 0;
+  });
+  return {
+    win: payouts.some((p) => p > 0),
+    reels,
+    payout: payouts.reduce((sum, p) => sum + p, 0),
+    winningRows: payouts.flatMap((p, i) => (p > 0 ? [i] : [])),
+    devilRows,
+  };
+}
+
+export function settleSpin(
+  bankroll: number,
+  outcome: ReturnType<typeof evaluateGrid>,
+) {
+  const cost = Math.min(10, bankroll);
+  const remainingCents = Math.round((bankroll - cost) * 100);
+  const lossCents = outcome.devilRows.length
+    ? Math.round(remainingCents / 2)
+    : 0;
+  const payout = outcome.devilRows.length ? 0 : outcome.payout;
+  return {
+    cost,
+    loss: lossCents / 100,
+    payout,
+    balance: (remainingCents - lossCents + payout * 100) / 100,
+  };
+}
+
+// Devil checks are independent of luck and run after all ordinary outcomes.
 export function roll(
   chance: number,
   multiplier: number,
@@ -41,13 +89,11 @@ export function roll(
   random = Math.random,
 ) {
   const rowChance = (1 - Math.cbrt(1 - chance / 100)) * 100;
-  const rows = Array.from({ length: 3 }, () =>
-    rollRow(rowChance, multiplier, diamondLevel, random),
+  const reels = Array.from(
+    { length: 3 },
+    () => rollRow(rowChance, multiplier, diamondLevel, random).reels,
   );
-  return {
-    win: rows.some((row) => row.win),
-    reels: rows.map((row) => row.reels),
-    payout: rows.reduce((sum, row) => sum + row.payout, 0),
-    winningRows: rows.flatMap((row, i) => (row.win ? [i] : [])),
-  };
+  for (let i = 0; i < reels.length; i++)
+    if (random() >= 1 - DEVIL_ROW_CHANCE) reels[i] = [DEVIL, DEVIL, DEVIL];
+  return evaluateGrid(reels, multiplier);
 }

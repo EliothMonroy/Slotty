@@ -9,9 +9,14 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
-const symbols = ['🍒', '🍋', '🔔', '💎', '7'];
-import { roll, prizes } from '../lib/game';
-const cash = (n: number) => '$' + n.toLocaleString('en-US');
+const symbols = ['🍒', '🍋', '🔔', '💎', '7', '😈'];
+import { roll, prizes, settleSpin, DEVIL_ROW_CHANCE } from '../lib/game';
+const cash = (n: number) =>
+  '$' +
+  n.toLocaleString('en-US', {
+    minimumFractionDigits: Number.isInteger(n) ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
 const fresh = () => ({
   money: 100,
   spins: 0,
@@ -51,14 +56,19 @@ export default function Home() {
     [4, 2, 3],
   ]);
   const [winningRows, setWinningRows] = useState<number[]>([]);
+  const [devilRows, setDevilRows] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('A little luck goes a long way.');
   const [last, setLast] = useState(0);
   const [sound, setSound] = useState(false);
   const lock = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [history, setHistory] = useState<{ r: number[][]; p: number }[]>([]);
+  const [history, setHistory] = useState<
+    { r: number[][]; p: number; loss: number; cost: number; devil: boolean }[]
+  >([]);
   const chance = 40 + s.levels[0] * 5;
+  const netChance = chance * (1 - DEVIL_ROW_CHANCE) ** 3;
+  const spinCost = Math.min(10, s.money);
   const multiplier = 1 + s.levels[1] * 0.5;
   const over = s.money === 0 && !busy;
   useEffect(
@@ -93,31 +103,42 @@ export default function Home() {
     setBusy(true);
     setLast(0);
     setWinningRows([]);
+    setDevilRows([]);
     setMessage('Let the good times roll…');
-    setS((v) => ({ ...v, money: v.money - 10 }));
+    const outcome = roll(chance, multiplier, s.levels[2]);
     const {
       win,
       reels: result,
       winningRows: matches,
-      payout,
-    } = roll(chance, multiplier, s.levels[2]);
+      devilRows: devils,
+    } = outcome;
+    const { payout, loss, balance, cost } = settleSpin(s.money, outcome);
+    setS((v) => ({ ...v, money: Math.round((v.money - cost) * 100) / 100 }));
     timer.current = setTimeout(() => {
       setReels(result);
       setWinningRows(matches);
-      setLast(payout);
+      setDevilRows(devils);
+      setLast(devils.length ? -loss : payout);
       setS((v) => ({
         ...v,
-        money: v.money + payout,
+        money: balance,
         spins: v.spins + 1,
         wins: v.wins + (win ? 1 : 0),
         earned: v.earned + payout,
         best: Math.max(v.best, payout),
       }));
-      setHistory((h) => [{ r: result, p: payout }, ...h].slice(0, 5));
+      setHistory((h) =>
+        [
+          { r: result, p: payout, loss, cost, devil: devils.length > 0 },
+          ...h,
+        ].slice(0, 5),
+      );
       setMessage(
-        win
-          ? `${matches.length} winning ${matches.length === 1 ? 'row' : 'rows'}. Beautiful.`
-          : 'No match. The next spin is yours.',
+        devils.length
+          ? 'Three devils. Half the bankroll lost; all payouts canceled.'
+          : win
+            ? `${matches.length} winning ${matches.length === 1 ? 'row' : 'rows'}. Beautiful.`
+            : 'No match. The next spin is yours.',
       );
       setBusy(false);
       lock.current = false;
@@ -130,7 +151,7 @@ export default function Home() {
     if (lock.current || s.levels[i] >= u.max || s.money - cost < 10) return;
     setS((v) => ({
       ...v,
-      money: v.money - cost,
+      money: Math.round((v.money - cost) * 100) / 100,
       levels: v.levels.map((l, j) => (j === i ? l + 1 : l)),
     }));
     setMessage(u.name + ' upgraded. Make your own luck.');
@@ -144,9 +165,9 @@ export default function Home() {
       [4, 2, 3],
     ]);
     setWinningRows([]);
+    setDevilRows([]);
     setHistory([]);
     setLast(0);
-    setWinningRows([]);
     setMessage('A fresh start. A hundred possibilities.');
   }
   useEffect(() => {
@@ -200,7 +221,7 @@ export default function Home() {
     register({
       name: 'spin_slotty',
       description:
-        'Spend $10 of virtual money on one spin and return the resolved bankroll and statistics.',
+        'Spend up to $10 of virtual money on one spin and return the resolved bankroll and statistics.',
       inputSchema: {
         type: 'object',
         properties: {},
@@ -210,7 +231,7 @@ export default function Home() {
       execute: async (input: unknown) => {
         if (!input || typeof input !== 'object' || Object.keys(input).length)
           throw new Error('Expected an empty object');
-        if (lock.current || api.current.s.money < 10)
+        if (lock.current || api.current.s.money <= 0)
           throw new Error('Cannot spin now');
         api.current.spin();
         await new Promise((resolve) => setTimeout(resolve, 1150));
@@ -259,7 +280,7 @@ export default function Home() {
               <span className="eyebrow">YOUR BANKROLL</span>
               <div className="balance">
                 {cash(s.money)}
-                <span>.00</span>
+                {Number.isInteger(s.money) && <span>.00</span>}
               </div>
             </div>
             <div className="bankroll-side">
@@ -273,7 +294,12 @@ export default function Home() {
             </div>
           </div>
           <div className="machine-assembly">
-            <div className={'machine ' + (last ? 'won' : '')}>
+            <div
+              className={
+                'machine ' +
+                (devilRows.length ? 'cursed' : last > 0 ? 'won' : '')
+              }
+            >
               <div className="machine-heading">
                 <span>★</span>
                 <span>THE LUCKY ORIGINAL</span>
@@ -292,7 +318,7 @@ export default function Home() {
                       : reels
                           .map(
                             (row, i) =>
-                              `Row ${i + 1}: ${row.map((r) => ['cherry', 'lemon', 'bell', 'diamond', 'seven'][r]).join(', ')}${winningRows.includes(i) ? ', winning row' : ''}`,
+                              `Row ${i + 1}: ${row.map((r) => ['cherry', 'lemon', 'bell', 'diamond', 'seven', 'devil'][r]).join(', ')}${devilRows.includes(i) ? ', devil penalty row' : winningRows.includes(i) ? ', winning row' : ''}`,
                           )
                           .join('; ')
                   }
@@ -302,7 +328,11 @@ export default function Home() {
                       key={rowIndex}
                       className={
                         'reel-row ' +
-                        (winningRows.includes(rowIndex) ? 'winning-row' : '')
+                        (devilRows.includes(rowIndex)
+                          ? 'devil-row'
+                          : winningRows.includes(rowIndex)
+                            ? 'winning-row'
+                            : '')
                       }
                       aria-hidden="true"
                     >
@@ -327,13 +357,20 @@ export default function Home() {
                 </div>
               </div>
               <div className="result" role="status" aria-live="polite">
-                {over ? 'The bankroll is empty. What a ride.' : message}
+                {over
+                  ? devilRows.length
+                    ? 'Three devils. Bankroll empty. Game over.'
+                    : 'The bankroll is empty. What a ride.'
+                  : message}
                 {last > 0 && <strong>+{cash(last)}</strong>}
+                {last < 0 && (
+                  <strong className="penalty">−{cash(-last)}</strong>
+                )}
               </div>
               <div className="machine-controls">
                 <div className="spin-cost">
                   <span>PER SPIN</span>
-                  <strong>$10</strong>
+                  <strong>{cash(over ? 10 : spinCost)}</strong>
                 </div>
                 {over ? (
                   <button className="spin-button" onClick={restart}>
@@ -372,7 +409,7 @@ export default function Home() {
                   ? 'Game over — start a new run to use the lever'
                   : busy
                     ? 'Spinning — lever locked'
-                    : 'Pull lever to spin for $10'
+                    : `Pull lever to spin for ${cash(spinCost)}`
               }
             >
               <span className="lever-assembly" aria-hidden="true">
@@ -416,13 +453,14 @@ export default function Home() {
               <span>
                 <Clover size={16} /> Win chance
               </span>
-              <strong>{chance}%</strong>
+              <strong>{netChance.toFixed(1)}%</strong>
             </div>
             <div className="track">
-              <i style={{ width: chance + '%' }} />
+              <i style={{ width: netChance + '%' }} />
             </div>
             <small>
-              Base 40% <span>+{s.levels[0] * 5}% from upgrades</span>
+              Base match chance 40%{' '}
+              <span>+{s.levels[0] * 5}% from upgrades</span>
             </small>
           </div>
           {upgrades.map((u, i) => {
@@ -444,7 +482,7 @@ export default function Home() {
                   <p>{u.desc}</p>
                   <div className="upgrade-effect">
                     {i === 0
-                      ? '+5% win chance'
+                      ? '+5% match chance'
                       : i === 1
                         ? '+0.5× payout multiplier'
                         : '+8% diamond conversion'}
@@ -495,21 +533,29 @@ export default function Home() {
             Each horizontal row pays separately. Row payouts add up; columns and
             diagonals do not pay.
           </p>
+          <p className="devil-rule">
+            😈 😈 😈 <strong>Lose 50%</strong> of your bankroll after the spin
+            cost (rounded to cents). All payouts are canceled, even on other
+            rows. One penalty per spin. Devil pairs do not pay. Each row has a
+            2% devil-triple chance; the win meter includes this risk. Below $10,
+            your final spin uses the remaining balance.
+          </p>
           <div className="payout-list">
             <div>
               <span className="pair">
                 AA<span>?</span>
               </span>
-              <small>Any pair</small>
+              <small>Normal pair</small>
               <strong>{cash(20 * multiplier)}</strong>
             </div>
-            {symbols.map((x, i) => (
+            {symbols.slice(0, 5).map((x, i) => (
               <div key={i}>
                 <span className={'payout-symbol ' + (i === 4 ? 'seven' : '')}>
                   {x}
                 </span>
                 <small>
-                  Triple {['cherry', 'lemon', 'bell', 'diamond', 'seven'][i]}
+                  Triple{' '}
+                  {['cherry', 'lemon', 'bell', 'diamond', 'seven', 'devil'][i]}
                 </small>
                 <strong>
                   {cash(Math.round((prizes[i] * multiplier) / 10) * 10)}
@@ -531,7 +577,7 @@ export default function Home() {
                     aria-label={h.r
                       .map(
                         (row, n) =>
-                          `Row ${n + 1}: ${row.map((r) => ['cherry', 'lemon', 'bell', 'diamond', 'seven'][r]).join(', ')}`,
+                          `Row ${n + 1}: ${row.map((r) => ['cherry', 'lemon', 'bell', 'diamond', 'seven', 'devil'][r]).join(', ')}`,
                       )
                       .join('; ')}
                   >
@@ -541,8 +587,14 @@ export default function Home() {
                       </span>
                     ))}
                   </span>
-                  <strong className={h.p ? 'positive' : ''}>
-                    {h.p ? '+' + cash(h.p) : '−$10'}
+                  <strong
+                    className={h.devil ? 'penalty' : h.p ? 'positive' : ''}
+                  >
+                    {h.devil
+                      ? `Devils −${cash(h.loss)} · spin ${cash(h.cost)}`
+                      : h.p
+                        ? '+' + cash(h.p)
+                        : '−' + cash(h.cost)}
                   </strong>
                 </div>
               ))}

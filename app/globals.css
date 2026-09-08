@@ -1192,3 +1192,30 @@ footer {
     font-size: 12px;
   }
 }
+
+.devil-rule {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #d8abb9;
+  padding: 12px;
+  background: #3b202c;
+  border: 1px solid #794456;
+  border-radius: 8px;
+}
+.devil-row .reel {
+  outline: 3px solid #f582a9;
+  outline-offset: -3px;
+}
+.devil-row .payline {
+  color: #f582a9;
+  opacity: 1;
+}
+.cursed .reel-frame {
+  box-shadow:
+    0 0 0 5px #582437,
+    0 0 20px #f582a922;
+}
+.result .penalty,
+.history .penalty {
+  color: #ff9ab7;
+}
