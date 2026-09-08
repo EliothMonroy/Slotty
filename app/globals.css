@@ -951,13 +951,13 @@ footer {
 }
 .slot-lever {
   position: relative;
-  width: 94px;
-  height: 130px;
+  width: 82px;
+  height: 224px;
   flex-shrink: 0;
   padding: 0;
   background: transparent;
   border: 0;
-  border-radius: 15px;
+  border-radius: 18px;
   touch-action: manipulation;
 }
 .lever-assembly {
@@ -966,79 +966,133 @@ footer {
 }
 .lever-plate {
   position: absolute;
-  bottom: 5px;
-  left: 15px;
-  width: 64px;
-  height: 72px;
-  background: linear-gradient(100deg, #0e140f, #425039 50%, #1a241a);
-  border: 1px solid #65724f;
-  border-radius: 30px;
+  bottom: 24px;
+  left: 10px;
+  width: 62px;
+  height: 94px;
+  border: 1px solid #6e7957;
+  border-radius: 12px 22px 22px 12px;
+  background: linear-gradient(100deg, #10170f, #39432e 46%, #202a1b);
   box-shadow:
-    inset 0 0 0 5px #1b241c,
-    0 5px 8px #0005;
+    inset 0 0 0 4px #161e14,
+    inset 0 6px 8px #a9ba6533,
+    3px 7px 10px #0005;
+}
+.lever-plate::before,
+.lever-plate::after {
+  content: '';
+  position: absolute;
+  left: 25px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid #7a8861;
+  background: linear-gradient(
+    135deg,
+    #a6b18a 42%,
+    #28351e 45%,
+    #28351e 58%,
+    #77835f 60%
+  );
+}
+.lever-plate::before {
+  top: 9px;
+}
+.lever-plate::after {
+  bottom: 9px;
 }
 .lever-pivot {
   position: absolute;
-  left: 29px;
-  bottom: 22px;
-  width: 36px;
-  height: 36px;
+  left: 20px;
+  bottom: 51px;
+  width: 42px;
+  height: 42px;
+  border: 3px solid #87936c;
   border-radius: 50%;
-  background: radial-gradient(
-    circle at 35% 30%,
-    #a4ac91,
-    #4b5840 50%,
-    #1b2418 80%
-  );
-  border: 2px solid #8f9a78;
+  background: radial-gradient(circle at 38% 30%, #5b6848, #1a2414 72%);
+  box-shadow:
+    0 0 0 4px #10180d,
+    inset 0 2px 5px #0008,
+    0 3px 8px #0005;
 }
 .lever-arm {
   position: absolute;
-  width: 12px;
-  height: 80px;
-  bottom: 37px;
-  left: 41px;
+  width: 14px;
+  height: 132px;
+  bottom: 72px;
+  left: 34px;
   background: linear-gradient(
     90deg,
-    #525d49,
-    #eef0d8 45%,
-    #a4ae92 65%,
-    #4c5940
+    #505a50,
+    #cad2c2 25%,
+    #f8faee 43%,
+    #a1ae99 60%,
+    #455140 95%
   );
-  border-radius: 8px;
+  border: 1px solid #e5ead08c;
+  border-radius: 7px;
   transform-origin: center bottom;
-  transform: rotate(-12deg);
-  transition: transform 0.25s ease-in-out;
-  box-shadow: 3px 2px 5px #0005;
+  transform: rotate(-5deg);
+  transition: height 0.3s cubic-bezier(0.2, 0.8, 0.25, 1);
+  box-shadow: 4px 2px 6px #0006;
 }
 .lever-knob {
   position: absolute;
-  top: -9px;
-  left: -15px;
-  width: 42px;
-  height: 42px;
+  top: -14px;
+  left: -21px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
+  border: 1px solid #eaffaa;
   background: radial-gradient(
-    circle at 32% 25%,
-    #f6ffcf 0%,
-    #d3f86b 25%,
-    #a1c748 58%,
-    #5e7926 90%
+    circle at 34% 25%,
+    #f5ffd0 0%,
+    #dafa82 18%,
+    #b3da50 47%,
+    #779a2e 78%,
+    #3c5717 100%
   );
-  border: 1px solid #d9ef91;
   box-shadow:
-    inset -4px -5px 8px #46601588,
-    0 5px 9px #0005;
+    inset -5px -7px 9px #45641977,
+    inset 2px 3px 4px #ffffff66,
+    0 5px 0 #30451b,
+    3px 9px 13px #0005;
+  transition: filter 0.2s;
+}
+.lever-knob::after {
+  content: '';
+  position: absolute;
+  width: 17px;
+  height: 8px;
+  left: 10px;
+  top: 8px;
+  border-radius: 50%;
+  transform: rotate(-30deg);
+  background: #fbffe7a6;
+  filter: blur(1px);
 }
 .slot-lever:hover:not(:disabled) .lever-knob {
-  filter: brightness(1.15);
+  filter: brightness(1.12);
 }
 .slot-lever:active:not(:disabled) .lever-arm,
 .slot-lever.pulled .lever-arm {
-  transform: rotate(38deg) scaleY(0.4);
+  height: 66px;
 }
 .slot-lever:disabled {
+  cursor: default;
+}
+.slot-lever.pulled {
   cursor: wait;
+}
+.lever-label {
+  position: absolute;
+  bottom: 0;
+  inset-inline: 0;
+  color: #b9c79c;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-align: center;
 }
 @media (max-width: 400px) {
   .lever-instructions strong {
@@ -1048,7 +1102,7 @@ footer {
     padding-left: 0;
   }
   .slot-lever {
-    width: 80px;
+    width: 82px;
   }
   .lever-control {
     gap: 4px;
@@ -1063,26 +1117,32 @@ footer {
 .machine-assembly > .slot-lever {
   position: absolute;
   right: 0;
-  top: 43%;
+  top: 42%;
   transform: translateY(-50%);
   width: 82px;
 }
 .machine-assembly > .slot-lever::before {
   content: '';
   position: absolute;
-  width: 28px;
-  height: 22px;
-  left: -10px;
-  bottom: 27px;
-  background: linear-gradient(#66724e, #252e20 70%, #151c12);
-  border: 1px solid #66724e;
-  border-radius: 4px;
+  width: 30px;
+  height: 40px;
+  left: -7px;
+  bottom: 51px;
+  background: linear-gradient(
+    #596641,
+    #859169 12%,
+    #3c492b 30%,
+    #202c18 80%,
+    #101a0b
+  );
+  border: 1px solid #647249;
+  border-radius: 3px;
+  box-shadow: 0 4px 6px #0004;
 }
 .machine-assembly .lever-assembly {
-  width: 94px;
+  width: 82px;
   left: 50%;
-  margin-left: -47px;
-  transform: scale(0.88);
+  margin-left: -41px;
 }
 .machine-assembly .machine-heading {
   gap: 8px;
@@ -1117,7 +1177,8 @@ footer {
     width: 64px;
   }
   .machine-assembly .lever-assembly {
-    transform: scale(0.72);
+    transform: scale(0.8);
+    transform-origin: center calc(100% - 72px);
   }
   .machine-assembly .machine {
     padding-left: 18px;

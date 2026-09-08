@@ -382,6 +382,9 @@ export default function Home() {
                   <span className="lever-knob" />
                 </span>
               </span>
+              <span className="lever-label" aria-hidden="true">
+                {over ? 'EMPTY' : busy ? '•••' : 'PULL ↓'}
+              </span>
             </button>
           </div>
           <div className="stats">
