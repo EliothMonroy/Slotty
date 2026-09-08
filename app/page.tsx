@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Clover,
-  Zap,
   ArrowUpRight,
   RotateCcw,
   Coins,
@@ -333,19 +332,40 @@ export default function Home() {
                 <span>PER SPIN</span>
                 <strong>$10</strong>
               </div>
-              <button
-                className="spin-button"
-                onClick={over ? restart : spin}
-                disabled={busy}
-              >
-                {over ? (
-                  <RotateCcw size={21} />
-                ) : (
-                  <Zap size={23} fill="currentColor" />
-                )}
-                {over ? 'PLAY AGAIN' : busy ? 'SPINNING…' : 'LET IT SPIN'}
-                <span>{over ? '$100' : '↗'}</span>
-              </button>
+              {over ? (
+                <button className="spin-button" onClick={restart}>
+                  <RotateCcw size={21} /> PLAY AGAIN <span>$100</span>
+                </button>
+              ) : (
+                <div className="lever-control">
+                  <div className="lever-instructions">
+                    <strong>{busy ? 'Good luck…' : 'Give it a pull.'}</strong>
+                    <span>
+                      {busy
+                        ? 'The reels are rolling'
+                        : 'Click or tap the lever to spin'}
+                    </span>
+                  </div>
+                  <button
+                    className={'slot-lever ' + (busy ? 'pulled' : '')}
+                    onClick={spin}
+                    disabled={busy}
+                    aria-label={
+                      busy
+                        ? 'Spinning — lever locked'
+                        : 'Pull lever to spin for $10'
+                    }
+                  >
+                    <span className="lever-assembly" aria-hidden="true">
+                      <span className="lever-plate" />
+                      <span className="lever-pivot" />
+                      <span className="lever-arm">
+                        <span className="lever-knob" />
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              )}
             </div>
             <div className="machine-footer">
               {over ? (
