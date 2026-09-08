@@ -88,6 +88,13 @@ export default function Home() {
   const multiplier = 1 + s.levels[1] * 0.5;
   const over = s.money < 10 && !busy;
   const canSpin = !busy && s.money >= spinCost;
+  useEffect(() => {
+    // Wait for the payout before adjusting the stake used by the current spin.
+    if (!busy && s.money >= 10) {
+      const maximumAffordable = Math.min(100, Math.floor(s.money / 10) * 10);
+      setSpinCost((current) => Math.min(current, maximumAffordable));
+    }
+  }, [busy, s.money]);
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current);
@@ -413,13 +420,25 @@ export default function Home() {
                     value={spinCost}
                     disabled={busy || over}
                     onChange={(event) => {
-                      if (!lock.current)
-                        setSpinCost(Number(event.target.value));
+                      const stake = Number(event.target.value);
+                      if (
+                        !lock.current &&
+                        Number.isInteger(stake) &&
+                        stake >= 10 &&
+                        stake <= 100 &&
+                        stake % 10 === 0 &&
+                        stake <= s.money
+                      )
+                        setSpinCost(stake);
                     }}
                   >
                     {Array.from({ length: 10 }, (_, i) => (i + 1) * 10).map(
                       (stake) => (
-                        <option key={stake} value={stake}>
+                        <option
+                          key={stake}
+                          value={stake}
+                          disabled={stake > s.money}
+                        >
                           {cash(stake)}
                         </option>
                       ),
