@@ -1219,3 +1219,31 @@ footer {
 .history .penalty {
   color: #ff9ab7;
 }
+
+.icon-3 {
+  background: #302738;
+  color: #d8b7ef;
+  border-color: #594268;
+}
+.ward-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 18px;
+  color: #d8b7ef;
+}
+.ward-status > svg {
+  flex-shrink: 0;
+}
+.ward-status p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.ward-status strong {
+  font-weight: 500;
+}
+.ward-status span {
+  display: block;
+  color: var(--muted);
+}

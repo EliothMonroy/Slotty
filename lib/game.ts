@@ -35,13 +35,25 @@ function rollRow(
 
 export const DEVIL = 5;
 export const DEVIL_ROW_CHANCE = 0.02;
+export function devilRowChance(wardLevel: number) {
+  return (
+    DEVIL_ROW_CHANCE * 0.8 ** Math.min(5, Math.max(0, Math.floor(wardLevel)))
+  );
+}
 
 export function evaluateGrid(reels: number[][], multiplier: number) {
   const devilRows = reels.flatMap((row, i) =>
     row.every((symbol) => symbol === DEVIL) ? [i] : [],
   );
   if (devilRows.length)
-    return { win: false, reels, payout: 0, winningRows: [], devilRows };
+    return {
+      win: false,
+      reels,
+      payout: 0,
+      winningRows: [],
+      devilRows,
+      fatal: devilRows.length === 3,
+    };
   const payouts = reels.map((row) => {
     const counts = new Map<number, number>();
     for (const symbol of row) counts.set(symbol, (counts.get(symbol) ?? 0) + 1);
@@ -60,6 +72,7 @@ export function evaluateGrid(reels: number[][], multiplier: number) {
     payout: payouts.reduce((sum, p) => sum + p, 0),
     winningRows: payouts.flatMap((p, i) => (p > 0 ? [i] : [])),
     devilRows,
+    fatal: false,
   };
 }
 
@@ -69,7 +82,11 @@ export function settleSpin(
 ) {
   const cost = Math.min(10, bankroll);
   const remaining = bankroll - cost;
-  const loss = outcome.devilRows.length ? Math.round(remaining / 2) : 0;
+  const loss = outcome.fatal
+    ? remaining
+    : outcome.devilRows.length
+      ? Math.round(remaining / 2)
+      : 0;
   const payout = outcome.devilRows.length ? 0 : outcome.payout;
   return {
     cost,
@@ -85,6 +102,7 @@ export function roll(
   multiplier: number,
   diamondLevel: number,
   random = Math.random,
+  wardLevel = 0,
 ) {
   const rowChance = (1 - Math.cbrt(1 - chance / 100)) * 100;
   const reels = Array.from(
@@ -92,6 +110,7 @@ export function roll(
     () => rollRow(rowChance, multiplier, diamondLevel, random).reels,
   );
   for (let i = 0; i < reels.length; i++)
-    if (random() >= 1 - DEVIL_ROW_CHANCE) reels[i] = [DEVIL, DEVIL, DEVIL];
+    if (random() >= 1 - devilRowChance(wardLevel))
+      reels[i] = [DEVIL, DEVIL, DEVIL];
   return evaluateGrid(reels, multiplier);
 }

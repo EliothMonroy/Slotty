@@ -6,11 +6,12 @@ import {
   RotateCcw,
   Coins,
   Sparkles,
+  ShieldCheck,
   Volume2,
   VolumeX,
 } from 'lucide-react';
 const symbols = ['🍒', '🍋', '🔔', '💎', '7', '😈'];
-import { roll, prizes, settleSpin, DEVIL_ROW_CHANCE } from '../lib/game';
+import { roll, prizes, settleSpin, devilRowChance } from '../lib/game';
 const cash = (n: number) =>
   '$' +
   n.toLocaleString('en-US', {
@@ -23,7 +24,7 @@ const fresh = () => ({
   wins: 0,
   earned: 0,
   best: 0,
-  levels: [0, 0, 0],
+  levels: [0, 0, 0, 0],
 });
 const upgrades = [
   {
@@ -47,6 +48,13 @@ const upgrades = [
     base: 100,
     max: 5,
   },
+  {
+    name: 'Devil ward',
+    icon: ShieldCheck,
+    desc: 'Reduce the chance of a devil triple on each row.',
+    base: 80,
+    max: 5,
+  },
 ];
 export default function Home() {
   const [s, setS] = useState(fresh);
@@ -64,10 +72,18 @@ export default function Home() {
   const lock = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [history, setHistory] = useState<
-    { r: number[][]; p: number; loss: number; cost: number; devil: boolean }[]
+    {
+      r: number[][];
+      p: number;
+      loss: number;
+      cost: number;
+      devil: boolean;
+      fatal: boolean;
+    }[]
   >([]);
   const chance = 40 + s.levels[0] * 5;
-  const netChance = chance * (1 - DEVIL_ROW_CHANCE) ** 3;
+  const devilChance = devilRowChance(s.levels[3] ?? 0);
+  const netChance = chance * (1 - devilChance) ** 3;
   const spinCost = Math.min(10, s.money);
   const multiplier = 1 + s.levels[1] * 0.5;
   const over = s.money === 0 && !busy;
@@ -105,12 +121,19 @@ export default function Home() {
     setWinningRows([]);
     setDevilRows([]);
     setMessage('Let the good times roll…');
-    const outcome = roll(chance, multiplier, s.levels[2]);
+    const outcome = roll(
+      chance,
+      multiplier,
+      s.levels[2],
+      Math.random,
+      s.levels[3],
+    );
     const {
       win,
       reels: result,
       winningRows: matches,
       devilRows: devils,
+      fatal,
     } = outcome;
     const { payout, loss, balance, cost } = settleSpin(s.money, outcome);
     setS((v) => ({ ...v, money: v.money - cost }));
@@ -129,16 +152,18 @@ export default function Home() {
       }));
       setHistory((h) =>
         [
-          { r: result, p: payout, loss, cost, devil: devils.length > 0 },
+          { r: result, p: payout, loss, cost, devil: devils.length > 0, fatal },
           ...h,
         ].slice(0, 5),
       );
       setMessage(
-        devils.length
-          ? 'Three devils. Half the bankroll lost; all payouts canceled.'
-          : win
-            ? `${matches.length} winning ${matches.length === 1 ? 'row' : 'rows'}. Beautiful.`
-            : 'No match. The next spin is yours.',
+        fatal
+          ? 'Nine devils. Your entire bankroll is gone. Game over.'
+          : devils.length
+            ? 'Three devils. Half the bankroll lost; all payouts canceled.'
+            : win
+              ? `${matches.length} winning ${matches.length === 1 ? 'row' : 'rows'}. Beautiful.`
+              : 'No match. The next spin is yours.',
       );
       setBusy(false);
       lock.current = false;
@@ -147,12 +172,12 @@ export default function Home() {
   }
   function buy(i: number) {
     const u = upgrades[i],
-      cost = u.base * 2 ** s.levels[i];
+      cost = u.base * 2 ** (s.levels[i] ?? 0);
     if (lock.current || s.levels[i] >= u.max || s.money - cost < 10) return;
     setS((v) => ({
       ...v,
       money: v.money - cost,
-      levels: v.levels.map((l, j) => (j === i ? l + 1 : l)),
+      levels: upgrades.map((_, j) => (v.levels[j] ?? 0) + (j === i ? 1 : 0)),
     }));
     setMessage(u.name + ' upgraded. Make your own luck.');
   }
@@ -355,9 +380,11 @@ export default function Home() {
               </div>
               <div className="result" role="status" aria-live="polite">
                 {over
-                  ? devilRows.length
-                    ? 'Three devils. Bankroll empty. Game over.'
-                    : 'The bankroll is empty. What a ride.'
+                  ? devilRows.length === 3
+                    ? 'Nine devils. Entire bankroll lost. Game over.'
+                    : devilRows.length
+                      ? 'Three devils. Bankroll empty. Game over.'
+                      : 'The bankroll is empty. What a ride.'
                   : message}
                 {last > 0 && <strong>+{cash(last)}</strong>}
                 {last < 0 && (
@@ -461,7 +488,7 @@ export default function Home() {
             </small>
           </div>
           {upgrades.map((u, i) => {
-            const level = s.levels[i],
+            const level = s.levels[i] ?? 0,
               cost = u.base * 2 ** level,
               max = level === u.max;
             return (
@@ -482,7 +509,9 @@ export default function Home() {
                       ? '+5% match chance'
                       : i === 1
                         ? '+0.5× payout multiplier'
-                        : '+8% diamond conversion'}
+                        : i === 2
+                          ? '+8% diamond conversion'
+                          : '−20% devil-triple odds per level'}
                   </div>
                   <div className="upgrade-bottom">
                     <div
@@ -511,6 +540,18 @@ export default function Home() {
               </article>
             );
           })}
+          <div className="ward-status">
+            <ShieldCheck size={18} aria-hidden="true" />
+            <p>
+              <strong>
+                Devil-triple chance: {(devilChance * 100).toFixed(3)}% per row
+              </strong>
+              <span>
+                {(100 * (1 - (1 - devilChance) ** 3)).toFixed(2)}% per spin ·
+                nine devils always end the run
+              </span>
+            </p>
+          </div>
           <div className="shop-note">
             <Sparkles size={18} />
             <p>
@@ -533,10 +574,14 @@ export default function Home() {
           <p className="devil-rule">
             😈 😈 😈 <strong>Lose 50%</strong> of your bankroll after the spin
             cost (rounded to the nearest dollar; .5 rounds up). All payouts are
-            canceled, even on other rows. One penalty per spin. Devil pairs do
-            not pay. Each row has a 2% devil-triple chance; the win meter
-            includes this risk. Below $10, your final spin uses the remaining
-            balance.
+            canceled, even on other rows. One penalty for one or two devil rows.{' '}
+            <strong>
+              Nine devils wipe out the entire bankroll: game over.
+            </strong>{' '}
+            Devil pairs do not pay. Each row currently has a{' '}
+            {(devilChance * 100).toFixed(3)}% devil-triple chance; Devil ward
+            reduces these odds. The win meter includes this risk. Below $10,
+            your final spin uses the remaining balance.
           </p>
           <div className="payout-list">
             <div>
@@ -589,7 +634,7 @@ export default function Home() {
                     className={h.devil ? 'penalty' : h.p ? 'positive' : ''}
                   >
                     {h.devil
-                      ? `Devils −${cash(h.loss)} · spin ${cash(h.cost)}`
+                      ? `${h.fatal ? 'Game over' : 'Devils'} −${cash(h.loss)} · spin ${cash(h.cost)}`
                       : h.p
                         ? '+' + cash(h.p)
                         : '−' + cash(h.cost)}
