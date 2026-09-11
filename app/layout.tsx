@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 export const metadata: Metadata = {
   title: 'Slotty — The Lucky Club',
+  icons: {
+    icon: { url: '/favicon.svg', type: 'image/svg+xml', sizes: 'any' },
+  },
   description:
     'Spin, win, and invest in luck upgrades. A virtual-money incremental slot game.',
 };
